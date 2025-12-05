@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能产品规划师 - 你的专属AI助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .header .nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header .nav a {
+            color: #666;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+            font-size: 14px;
+        }
+
+        .header .nav a:hover {
+            background: #f0f0f0;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            max-width: 1600px;
+            width: 100%;
+            margin: 20px auto;
+            gap: 20px;
+            padding: 0 20px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .capability-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .capability-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .capability-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .capability-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-left-color: #764ba2;
+        }
+
+        .capability-item .title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .capability-item .desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .chat-header h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .chat-header .subtitle {
+            font-size: 14px;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+
+        .chat-header .badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 12px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .message-content {
+            flex: 1;
+            max-width: 75%;
+        }
+
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 6px;
+            padding: 0 5px;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 15px 25px;
+            color: #666;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-indicator::before {
+            content: "💭 ";
+        }
+
+        .chat-input-area {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .input-btn {
+            padding: 8px 16px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .input-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-box {
+            flex: 1;
+            min-height: 60px;
+            max-height: 200px;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            resize: none;
+            font-family: inherit;
+            transition: border-color 0.3s;
+            line-height: 1.5;
+        }
+
+        .input-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-btn {
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .quick-action-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .quick-action-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .file-upload-area {
+            margin-top: 10px;
+            padding: 15px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌟 智能产品规划师 - 你的专属AI助手</h1>
+        <div class="nav">
+            <a href="/">🏠 首页</a>
+            <a href="/tasks">📋 任务管理</a>
+            <a href="/roles">👥 角色管理</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- 左侧能力面板 -->
+        <div class="sidebar">
+            <div class="sidebar-title">💡 核心能力</div>
+            <div class="capability-list">
+                <div class="capability-item active" onclick="showCapability('chat')">
+                    <div class="title">💬 多模态对话</div>
+                    <div class="desc">文字、图片、文档、音频</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('requirement')">
+                    <div class="title">📝 需求引导</div>
+                    <div class="desc">挖掘、澄清、优化需求</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('business')">
+                    <div class="title">📊 业务分析</div>
+                    <div class="desc">需求分析、业务规划</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('tech')">
+                    <div class="title">🔧 技术对接</div>
+                    <div class="desc">技术选型、方案建议</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('task')">
+                    <div class="title">📋 任务拆解</div>
+                    <div class="desc">需求分解、任务分配</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('reference')">
+                    <div class="title">🔍 参考软件分析</div>
+                    <div class="desc">理解功能、设计思路</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('monitor')">
+                    <div class="title">👁️ 数字人监控</div>
+                    <div class="desc">监控工作、识别问题</div>
+                </div>
+                <div class="capability-item" onclick="showCapability('knowledge')">
+                    <div class="title">🧠 知识沉淀</div>
+                    <div class="desc">自动提取、保存知识</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧聊天区域 -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>🌟 智能产品规划师</h2>
+                <div class="subtitle">
+                    你的专属AI助手 - 从想法到落地的全程陪伴<br>
+                    帮助你将零散的想法转化为清晰、科学、可执行的软件项目
+                </div>
+                <div class="badge">
+                    <span class="status-indicator"></span>
+                    在线服务中
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <strong>你好！我是智能产品规划师，你的专属AI助手。</strong>
+                            <br><br>
+                            我可以帮助你：
+                            <br>• <strong>理解你的想法</strong> - 通过文字、图片、文档、甚至语音，深入理解你的业务需求
+                            <br>• <strong>引导需求梳理</strong> - 将模糊想法转化为清晰、科学、可执行的需求
+                            <br>• <strong>业务分析</strong> - 深入分析业务需求，生成详细需求文档和业务方案
+                            <br>• <strong>技术对接</strong> - 了解最新技术，提供技术方案建议
+                            <br>• <strong>任务拆解</strong> - 将需求拆解成具体任务，自动分配给数字人团队
+                            <br>• <strong>参考软件分析</strong> - 分析参考软件的使用说明，理解其逻辑，指导团队构建类似软件
+                            <br>• <strong>全程陪伴</strong> - 从项目构想到最终落地的全过程提供支持和指导
+                            <br><br>
+                            <strong>请告诉我你的想法，我会帮助你一步步实现！</strong>
+                        </div>
+                        <div class="message-time">刚刚</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">智能产品规划师正在思考...</div>
+
+            <div class="chat-input-area">
+                <div class="input-toolbar">
+                    <button class="input-btn" onclick="uploadImage()">
+                        📷 上传图片
+                    </button>
+                    <button class="input-btn" onclick="uploadDocument()">
+                        📄 上传文档
+                    </button>
+                    <button class="input-btn" onclick="uploadAudio()">
+                        🎤 上传音频
+                    </button>
+                    <button class="input-btn" onclick="showReferenceAnalysis()">
+                        🔍 分析参考软件
+                    </button>
+                </div>
+
+                <div class="input-container">
+                    <textarea
+                        id="messageInput"
+                        class="input-box"
+                        placeholder="输入你的想法、需求或问题...（支持多模态输入）"
+                        rows="2"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        发送
+                    </button>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="quickAction('我想做一个智能客服系统，帮我分析一下需求')">
+                        💬 智能客服系统
+                    </button>
+                    <button class="quick-action-btn" onclick="quickAction('帮我分析一个参考软件的使用说明')">
+                        🔍 分析参考软件
+                    </button>
+                    <button class="quick-action-btn" onclick="quickAction('我需要技术方案建议')">
+                        💡 技术方案
+                    </button>
+                    <button class="quick-action-btn" onclick="quickAction('帮我拆解任务并分配给数字人团队')">
+                        📋 任务拆解
+                    </button>
+                </div>
+
+                <div class="file-upload-area" id="fileUploadArea" onclick="triggerFileUpload()">
+                    📎 拖拽文件到这里或点击上传（支持图片、PDF、音频等）
+                </div>
+                <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.mp3,.wav,.m4a" style="display: none;" onchange="handleFileSelect(event)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        // 回车发送（Shift+Enter换行）
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 自动调整输入框高度
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + 'px';
+        });
+
+        // 文件拖拽
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // 添加用户消息
+            addMessage('user', message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // 显示输入指示器
+            showTyping();
+            sendBtn.disabled = true;
+
+            // 发送到后端
+            fetch('/api/smart-planner/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    context: getChatHistory()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTyping();
+                sendBtn.disabled = false;
+
+                if (data.success) {
+                    addMessage('assistant', data.response);
+                } else {
+                    addMessage('assistant', '抱歉，处理你的请求时出现了错误：' + (data.error || '未知错误'));
+                }
+            })
+            .catch(error => {
+                hideTyping();
+                sendBtn.disabled = false;
+                addMessage('assistant', '网络错误，请稍后重试。如果问题持续，请检查Ollama服务是否正常运行。');
+                console.error('Error:', error);
+            });
+        }
+
+        function addMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = role === 'user' ? '👤' : '🤖';
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <div class="message-bubble">${formatMessage(content)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatMessage(content) {
+            // 简单的Markdown格式化
+            return content
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: monospace;">$1</code>');
+        }
+
+        function showTyping() {
+            typingIndicator.classList.add('active');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.classList.remove('active');
+        }
+
+        function getChatHistory() {
+            const messages = chatMessages.querySelectorAll('.message');
+            const history = [];
+            messages.forEach(msg => {
+                const role = msg.classList.contains('user') ? 'user' : 'assistant';
+                const content = msg.querySelector('.message-bubble').textContent;
+                history.push({ role, content });
+            });
+            return history;
+        }
+
+        function quickAction(text) {
+            messageInput.value = text;
+            messageInput.focus();
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + 'px';
+        }
+
+        function showCapability(capability) {
+            // 更新能力项状态
+            document.querySelectorAll('.capability-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.capability-item').classList.add('active');
+
+            // 这里可以显示对应能力的说明或示例
+            const capabilityMessages = {
+                'chat': '💬 多模态对话：支持文字、图片、文档、音频等多种输入方式',
+                'requirement': '📝 需求引导：通过提问帮助你梳理和优化需求',
+                'business': '📊 业务分析：深入分析业务需求，生成详细需求文档',
+                'tech': '🔧 技术对接：提供技术选型和方案建议',
+                'task': '📋 任务拆解：将需求拆解成具体任务并分配给数字人',
+                'reference': '🔍 参考软件分析：分析参考软件的使用说明和设计思路',
+                'monitor': '👁️ 数字人监控：监控所有数字人的工作状态和问题',
+                'knowledge': '🧠 知识沉淀：自动提取和保存有价值的知识'
+            };
+
+            addMessage('assistant', capabilityMessages[capability] || '功能说明');
+        }
+
+        function uploadImage() {
+            alert('图片上传功能开发中，将支持流程图、界面截图、手绘草图等');
+        }
+
+        function uploadDocument() {
+            alert('文档上传功能开发中，将支持PDF、Word、Excel、Markdown等格式');
+        }
+
+        function uploadAudio() {
+            alert('音频上传功能开发中，将支持MP3、WAV、M4A等格式，并自动转换为文字');
+        }
+
+        function showReferenceAnalysis() {
+            quickAction('请帮我分析一个参考软件的使用说明，理解其功能逻辑，并指导团队构建类似软件');
+        }
+
+        function triggerFileUpload() {
+            fileInput.click();
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                const fileName = file.name;
+                const fileType = file.type;
+
+                if (fileType.startsWith('image/')) {
+                    addMessage('user', `📷 上传了图片：${fileName}`);
+                    alert(`图片上传功能开发中：${fileName}`);
+                } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+                    addMessage('user', `📄 上传了PDF文档：${fileName}`);
+                    alert(`PDF文档解析功能开发中：${fileName}`);
+                } else if (fileType.startsWith('audio/') || fileName.match(/\.(mp3|wav|m4a|aac)$/i)) {
+                    addMessage('user', `🎤 上传了音频文件：${fileName}`);
+                    alert(`音频转文字功能开发中：${fileName}`);
+                } else {
+                    addMessage('user', `📎 上传了文件：${fileName}`);
+                    alert(`文件处理功能开发中：${fileName}`);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

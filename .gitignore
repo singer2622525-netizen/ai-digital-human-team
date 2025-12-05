@@ -1,0 +1,115 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Credentials and secrets
+credentials/
+secrets/
+*.key
+*.pem
+passwords.db
+credentials.db
+
+# Uploads
+uploads/
+web_interface/uploads/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+03-技术实现/02-功能模块/web_interface/instance/
+03-技术实现/02-功能模块/web_interface/uploads/
+*.pyc
+
+# RAGFlow credentials (if stored locally)
+ragflow_config.json
+ragflow_credentials.json
+
+# Progress tracking (optional - you may want to commit this)
+# progress_data.json
+
+# Knowledge base local cache
+knowledge_cache/
+.chroma/
+
+# Test files
+test_*.py
+*_test.py
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

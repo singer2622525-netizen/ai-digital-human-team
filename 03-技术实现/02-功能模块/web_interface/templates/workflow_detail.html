@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作流详情 - 数字人队伍</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        
+        .back-btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-btn:hover {
+            background: #2980b9;
+        }
+        
+        .info-section {
+            margin-bottom: 30px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-running { background: #d1ecf1; color: #0c5460; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-paused { background: #ffeaa7; color: #d63031; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        
+        .steps-section {
+            margin-top: 30px;
+        }
+        
+        .steps-list {
+            margin-top: 15px;
+        }
+        
+        .step-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .step-info {
+            flex: 1;
+        }
+        
+        .step-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .step-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .visualization-section {
+            margin-top: 30px;
+        }
+        
+        .mermaid-container {
+            margin-top: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        
+        .error {
+            color: #721c24;
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 工作流详情</h1>
+            <a href="/" class="back-btn">← 返回首页</a>
+        </header>
+        
+        <div id="workflow-info" class="info-section">
+            <div class="loading">加载中...</div>
+        </div>
+        
+        <div id="workflow-steps" class="steps-section" style="display: none;">
+            <h2>工作流步骤</h2>
+            <div class="steps-list" id="steps-list"></div>
+        </div>
+        
+        <div class="visualization-section">
+            <h2>工作流可视化</h2>
+            <div class="mermaid-container" id="mermaid-container">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+        
+        <div class="actions" id="actions" style="display: none;">
+            <button class="btn btn-primary" onclick="startWorkflow()">启动工作流</button>
+            <button class="btn btn-warning" onclick="pauseWorkflow()">暂停工作流</button>
+            <button class="btn btn-warning" onclick="resumeWorkflow()">恢复工作流</button>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        const WORKFLOW_ID = '{{ workflow_id }}';
+        
+        // 初始化Mermaid
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        }
+        
+        async function loadWorkflow() {
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows/${WORKFLOW_ID}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        document.getElementById('workflow-info').innerHTML = 
+                            `<div class="error">
+                                <h3>工作流不存在</h3>
+                                <p>工作流ID: ${WORKFLOW_ID}</p>
+                                <p>该工作流可能已被删除或ID不正确。</p>
+                                <a href="/" class="back-btn" style="margin-top: 15px; display: inline-block;">返回首页</a>
+                            </div>`;
+                        document.getElementById('workflow-steps').style.display = 'none';
+                        document.getElementById('actions').style.display = 'none';
+                        document.getElementById('mermaid-container').innerHTML = 
+                            '<div class="error">无法加载可视化图表：工作流不存在</div>';
+                        return;
+                    }
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const workflow = await response.json();
+                renderWorkflowInfo(workflow);
+                renderSteps(workflow);
+                loadMermaid(workflow);
+                updateActions(workflow);
+            } catch (error) {
+                document.getElementById('workflow-info').innerHTML = 
+                    `<div class="error">
+                        <h3>加载失败</h3>
+                        <p>错误信息: ${error.message}</p>
+                        <a href="/" class="back-btn" style="margin-top: 15px; display: inline-block;">返回首页</a>
+                    </div>`;
+            }
+        }
+        
+        function renderWorkflowInfo(workflow) {
+            const statusClass = `status-${workflow.status}`;
+            const statusText = {
+                'pending': '待启动',
+                'running': '运行中',
+                'completed': '已完成',
+                'paused': '已暂停',
+                'failed': '失败'
+            }[workflow.status] || workflow.status;
+            
+            document.getElementById('workflow-info').innerHTML = `
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">工作流ID</div>
+                        <div class="info-value">${workflow.id}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">模板名称</div>
+                        <div class="info-value">${workflow.template_name || '未知'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">状态</div>
+                        <div class="info-value">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">创建时间</div>
+                        <div class="info-value">${formatDate(workflow.created_at)}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">更新时间</div>
+                        <div class="info-value">${formatDate(workflow.updated_at)}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">步骤数量</div>
+                        <div class="info-value">${workflow.steps ? workflow.steps.length : 0}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderSteps(workflow) {
+            if (!workflow.steps || workflow.steps.length === 0) {
+                return;
+            }
+            
+            document.getElementById('workflow-steps').style.display = 'block';
+            const stepsList = document.getElementById('steps-list');
+            
+            stepsList.innerHTML = workflow.steps.map(step => {
+                const statusClass = `status-${step.status}`;
+                const statusText = {
+                    'pending': '待执行',
+                    'running': '执行中',
+                    'completed': '已完成',
+                    'failed': '失败'
+                }[step.status] || step.status;
+                
+                return `
+                    <div class="step-item">
+                        <div class="step-info">
+                            <div class="step-name">${step.step_type || '未知步骤'}</div>
+                            <div class="step-meta">
+                                角色: ${step.role || '未分配'} | 
+                                状态: <span class="status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function loadMermaid(workflow) {
+            try {
+                const response = await fetch(`${API_BASE}/api/visualization/workflows/${WORKFLOW_ID}/mermaid`);
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.success && typeof mermaid !== 'undefined') {
+                    const container = document.getElementById('mermaid-container');
+                    container.innerHTML = `<div class="mermaid">${data.mermaid}</div>`;
+                    mermaid.run();
+                } else {
+                    document.getElementById('mermaid-container').innerHTML = 
+                        '<div class="error">无法加载可视化图表</div>';
+                }
+            } catch (error) {
+                document.getElementById('mermaid-container').innerHTML = 
+                    `<div class="error">加载可视化失败: ${error.message}</div>`;
+            }
+        }
+        
+        function updateActions(workflow) {
+            const actions = document.getElementById('actions');
+            actions.style.display = 'flex';
+            
+            // 根据状态显示/隐藏按钮
+            const startBtn = actions.querySelector('button[onclick="startWorkflow()"]');
+            const pauseBtn = actions.querySelector('button[onclick="pauseWorkflow()"]');
+            const resumeBtn = actions.querySelector('button[onclick="resumeWorkflow()"]');
+            
+            if (workflow.status === 'pending') {
+                startBtn.style.display = 'block';
+                pauseBtn.style.display = 'none';
+                resumeBtn.style.display = 'none';
+            } else if (workflow.status === 'running') {
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = 'block';
+                resumeBtn.style.display = 'none';
+            } else if (workflow.status === 'paused') {
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = 'none';
+                resumeBtn.style.display = 'block';
+            } else {
+                actions.style.display = 'none';
+            }
+        }
+        
+        async function startWorkflow() {
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows/${WORKFLOW_ID}/start`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('工作流已启动');
+                    loadWorkflow();
+                } else {
+                    const data = await response.json();
+                    alert('启动失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('启动失败: ' + error.message);
+            }
+        }
+        
+        async function pauseWorkflow() {
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows/${WORKFLOW_ID}/pause`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('工作流已暂停');
+                    loadWorkflow();
+                } else {
+                    const data = await response.json();
+                    alert('暂停失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('暂停失败: ' + error.message);
+            }
+        }
+        
+        async function resumeWorkflow() {
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows/${WORKFLOW_ID}/resume`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('工作流已恢复');
+                    loadWorkflow();
+                } else {
+                    const data = await response.json();
+                    alert('恢复失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('恢复失败: ' + error.message);
+            }
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+        
+        // 页面加载时加载工作流数据
+        window.onload = function() {
+            loadWorkflow();
+        };
+    </script>
+</body>
+</html>
+

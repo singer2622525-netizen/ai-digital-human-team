@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务依赖可视化 - 数字人队伍</title>
+    <!-- CDN资源，添加错误处理 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
+            onerror="console.warn('Mermaid加载失败，可视化功能将不可用')"></script>
+    <script src="https://d3js.org/d3.v7.min.js"
+            onerror="console.warn('D3.js加载失败，D3图表功能将不可用')"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+            display: block;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: block;
+            visibility: visible;
+        }
+        
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .visualization-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .mermaid-container {
+            min-height: 400px;
+            overflow: auto;
+        }
+        
+        .d3-container {
+            min-height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .status-pending { background: #fff3cd; }
+        .status-completed { background: #d4edda; }
+        .status-failed { background: #f8d7da; }
+        .status-inprogress { background: #d1ecf1; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 任务依赖可视化</h1>
+            <div class="controls">
+                <button onclick="loadMermaid()">🔄 刷新Mermaid图</button>
+                <button onclick="loadD3()">🔄 刷新D3图</button>
+                <button onclick="loadGraphData()">🔄 刷新图数据</button>
+            </div>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('mermaid')">Mermaid图</button>
+            <button class="tab" onclick="switchTab('d3')">D3.js图</button>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="mermaid-tab" class="tab-content" style="display: block;">
+            <div class="visualization-container">
+                <h2>Mermaid流程图</h2>
+                <div id="mermaid-container" class="mermaid-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="d3-tab" class="tab-content" style="display: none;">
+            <div class="visualization-container">
+                <h2>D3.js交互式图</h2>
+                <div id="d3-container" class="d3-container"></div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color status-pending"></div>
+                <span>待分配</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color status-inprogress"></div>
+                <span>进行中</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color status-completed"></div>
+                <span>已完成</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color status-failed"></div>
+                <span>失败</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 立即输出日志，确保脚本执行
+        console.log('可视化页面脚本开始执行...');
+        console.log('当前时间:', new Date().toISOString());
+        console.log('文档状态:', document.readyState);
+        console.log('Body元素:', document.body);
+        
+        const API_BASE = window.location.origin;
+        console.log('API_BASE:', API_BASE);
+        
+        // 确保body可见
+        if (document.body) {
+            document.body.style.display = 'block';
+            document.body.style.visibility = 'visible';
+            console.log('Body样式已设置');
+        }
+        
+        // 初始化Mermaid（如果可用）
+        if (typeof mermaid !== 'undefined') {
+            try {
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+                console.log('Mermaid初始化成功');
+            } catch (e) {
+                console.warn('Mermaid初始化失败:', e);
+            }
+        } else {
+            console.warn('Mermaid未加载，可视化功能将不可用');
+        }
+        
+        function switchTab(tabName) {
+            // 隐藏所有标签页
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // 移除所有活动状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签页
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            event.target.classList.add('active');
+        }
+        
+        async function loadMermaid() {
+            const container = document.getElementById('mermaid-container');
+            if (!container) {
+                console.error('找不到mermaid-container元素');
+                return;
+            }
+            
+            try {
+                container.innerHTML = '<div class="loading">加载中...</div>';
+                console.log('开始请求Mermaid数据...');
+                
+                const response = await fetch(`${API_BASE}/api/visualization/tasks/mermaid`);
+                console.log('API响应状态:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('API返回数据:', data);
+                console.log('Mermaid代码长度:', data.mermaid ? data.mermaid.length : 0);
+                
+                if (data.success) {
+                    if (typeof mermaid !== 'undefined') {
+                        console.log('准备渲染Mermaid图...');
+                        container.innerHTML = '<div class="mermaid">' + data.mermaid + '</div>';
+                        
+                        // 等待DOM更新
+                        setTimeout(() => {
+                            try {
+                                mermaid.run();
+                                console.log('Mermaid渲染完成');
+                            } catch (e) {
+                                console.error('Mermaid渲染失败:', e);
+                                container.innerHTML = '<div class="error">Mermaid渲染失败: ' + e.message + '<br><button onclick="loadMermaid()" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">重试</button></div>';
+                            }
+                        }, 100);
+                    } else {
+                        console.error('Mermaid未加载');
+                        container.innerHTML = '<div class="error">Mermaid未加载，无法显示可视化图表。<br>请检查网络连接或刷新页面。<br><button onclick="loadMermaid()" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">重试</button></div>';
+                    }
+                } else {
+                    throw new Error('API返回失败');
+                }
+            } catch (error) {
+                console.error('加载Mermaid图失败:', error);
+                container.innerHTML = '<div class="error">加载失败: ' + error.message + '<br><button onclick="loadMermaid()" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">重试</button></div>';
+            }
+        }
+        
+        async function loadD3() {
+            const container = document.getElementById('d3-container');
+            if (!container) {
+                console.error('找不到d3-container元素');
+                return;
+            }
+            
+            try {
+                container.innerHTML = '<div class="loading">加载中...</div>';
+                
+                if (typeof d3 === 'undefined') {
+                    throw new Error('D3.js未加载，无法显示D3图表');
+                }
+                
+                const response = await fetch(`${API_BASE}/api/visualization/tasks/d3`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderD3Graph(data.data);
+                } else {
+                    throw new Error('API返回失败');
+                }
+            } catch (error) {
+                console.error('加载D3图失败:', error);
+                container.innerHTML = '<div class="error">加载失败: ' + error.message + '<br><button onclick="loadD3()" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">重试</button></div>';
+            }
+        }
+        
+        function renderD3Graph(graphData) {
+            const container = document.getElementById('d3-container');
+            if (!container) {
+                console.error('找不到d3-container元素');
+                return;
+            }
+            
+            if (typeof d3 === 'undefined') {
+                container.innerHTML = '<div class="error">D3.js未加载，无法显示D3图表</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            const width = container.clientWidth || 800;
+            const height = 600;
+            
+            const svg = d3.select('#d3-container')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const simulation = d3.forceSimulation(graphData.nodes)
+                .force('link', d3.forceLink(graphData.links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2));
+            
+            // 绘制连线
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(graphData.links)
+                .enter()
+                .append('line')
+                .attr('stroke', '#999')
+                .attr('stroke-opacity', 0.6)
+                .attr('stroke-width', 2);
+            
+            // 绘制节点
+            const node = svg.append('g')
+                .selectAll('circle')
+                .data(graphData.nodes)
+                .enter()
+                .append('circle')
+                .attr('r', 10)
+                .attr('fill', d => {
+                    if (d.status === 'completed') return '#d4edda';
+                    if (d.status === 'failed') return '#f8d7da';
+                    if (d.status === 'in_progress') return '#d1ecf1';
+                    return '#fff3cd';
+                })
+                .attr('stroke', '#333')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            // 添加标签
+            const label = svg.append('g')
+                .selectAll('text')
+                .data(graphData.nodes)
+                .enter()
+                .append('text')
+                .text(d => d.name)
+                .attr('font-size', 12)
+                .attr('dx', 15)
+                .attr('dy', 4);
+            
+            // 更新位置
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+                
+                label
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+            
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+        
+        async function loadGraphData() {
+            try {
+                const response = await fetch(`${API_BASE}/api/visualization/tasks/dependency`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('图数据:', data.graph);
+                    // 可以在这里处理图数据
+                }
+            } catch (error) {
+                showError('加载图数据失败: ' + error.message);
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        // 页面加载时自动加载Mermaid图
+        function onPageLoad() {
+            console.log('可视化页面加载完成');
+            console.log('Mermaid可用:', typeof mermaid !== 'undefined');
+            console.log('D3可用:', typeof d3 !== 'undefined');
+            console.log('Body元素:', document.body);
+            console.log('Container元素:', document.querySelector('.container'));
+            
+            // 确保DOM元素存在后再加载
+            const mermaidContainer = document.getElementById('mermaid-container');
+            if (mermaidContainer) {
+                console.log('找到mermaid-container，开始加载...');
+                loadMermaid();
+            } else {
+                console.error('找不到mermaid-container元素');
+                // 尝试延迟加载
+                setTimeout(() => {
+                    const retryContainer = document.getElementById('mermaid-container');
+                    if (retryContainer) {
+                        console.log('延迟加载成功，找到mermaid-container');
+                        loadMermaid();
+                    } else {
+                        console.error('延迟加载失败，仍然找不到mermaid-container');
+                    }
+                }, 1000);
+            }
+            
+            // 每30秒自动刷新
+            setInterval(() => {
+                const activeTab = document.querySelector('.tab.active');
+                if (activeTab && activeTab.textContent.includes('Mermaid')) {
+                    loadMermaid();
+                } else {
+                    loadD3();
+                }
+            }, 30000);
+        }
+        
+        // 使用多种方式确保页面加载时执行
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('文档已加载，立即执行');
+            setTimeout(onPageLoad, 100);
+        } else {
+            window.addEventListener('load', onPageLoad);
+            document.addEventListener('DOMContentLoaded', onPageLoad);
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>软件工程事业部 - AI数字人队伍管理平台</title>
+    <!-- CDN资源，添加错误处理 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"
+            onerror="console.warn('Chart.js加载失败，图表功能将不可用')"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"
+            onerror="console.warn('Socket.IO加载失败，实时更新功能将不可用')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
+            onerror="console.warn('Mermaid加载失败，可视化功能将不可用')"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* 顶部导航栏 */
+        .top-nav {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 标签页导航 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        /* 标签页内容 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        /* 统计卡片网格 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        /* 数字人卡片网格 */
+        .humans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .human-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .human-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .human-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .human-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .human-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-idle { background: #e9ecef; color: #495057; }
+        .status-working { background: #d1ecf1; color: #0c5460; }
+        .status-error { background: #f8d7da; color: #721c24; }
+
+        .human-info {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .human-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        /* 任务表格 */
+        .task-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .task-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .task-table td {
+            padding: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .task-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* 状态标签 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-assigned { background: #cfe2ff; color: #084298; }
+        .status-in_progress { background: #d1ecf1; color: #0c5460; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+
+        /* 优先级标签 */
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .priority-low { background: #e9ecef; color: #495057; }
+        .priority-medium { background: #fff3cd; color: #856404; }
+        .priority-high { background: #ffeaa7; color: #856404; }
+        .priority-urgent { background: #f8d7da; color: #721c24; }
+
+        /* 可视化容器 */
+        .visualization-container {
+            min-height: 500px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .mermaid-container {
+            min-height: 400px;
+            overflow: auto;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .nav-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .humans-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #721c24;
+            background: #f8d7da;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="top-nav">
+        <div class="nav-content">
+            <div class="nav-title">🤖 软件工程事业部 - AI数字人队伍管理平台</div>
+            <div class="nav-links">
+                <a href="/" class="nav-link active">首页</a>
+                <a href="/smart-planner" class="nav-link" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 20px; border-radius: 20px; font-weight: bold;">🌟 智能产品规划师</a>
+                <a href="/tasks" class="nav-link">任务管理</a>
+                <a href="/visualization" class="nav-link">可视化</a>
+                <a href="/docs/user-manual" class="nav-link">📖 操作手册</a>
+                <a href="/docs/cursor-guide" class="nav-link">🚀 使用指南</a>
+                <a href="/docs/technical-spec" class="nav-link">🔧 技术说明</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 标签页导航 -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">📊 总览</button>
+            <button class="tab" onclick="switchTab('humans')">👥 数字人队伍</button>
+            <button class="tab" onclick="switchTab('tasks')">📋 任务管理</button>
+            <button class="tab" onclick="switchTab('workflows')">🔄 工作流</button>
+            <button class="tab" onclick="switchTab('visualization')">📈 可视化</button>
+            <button class="tab" onclick="switchTab('knowledge')">📚 知识库</button>
+            <button class="tab" onclick="switchTab('sync')">🔄 数据同步</button>
+            <button class="tab" onclick="switchTab('docs')">📖 帮助文档</button>
+        </div>
+
+        <!-- 总览标签页 -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">总任务数</div>
+                    <div class="stat-value" id="totalTasks">-</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-label">已完成</div>
+                    <div class="stat-value" id="completedTasks">-</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">进行中</div>
+                    <div class="stat-value" id="inProgressTasks">-</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="stat-label">数字人在线</div>
+                    <div class="stat-value" id="onlineHumans">-</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📊 系统概览</div>
+                <div id="overview-content">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数字人队伍标签页 -->
+        <div id="humans-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">👥 数字人队伍状态</div>
+                <div class="humans-grid" id="humans-grid">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务管理标签页 -->
+        <div id="tasks-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">📋 最近任务</div>
+                <div id="tasks-content">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工作流标签页 -->
+        <div id="workflows-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">🔄 工作流管理</div>
+                <div id="workflows-content">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 可视化标签页 -->
+        <div id="visualization-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">📈 任务依赖可视化</div>
+                <div class="visualization-container">
+                    <div id="mermaid-viz" class="mermaid-container">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 知识库标签页 -->
+        <div id="knowledge-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">📚 知识库</div>
+                <div id="knowledge-content">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据同步标签页 -->
+        <div id="sync-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">🔄 数据同步</div>
+                <div id="sync-content" style="padding: 20px;">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 帮助文档标签页 -->
+        <div id="docs-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">📖 帮助文档</div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
+                            <h3 style="margin-bottom: 10px; color: #2c3e50;">📖 用户操作手册</h3>
+                            <p style="color: #666; margin-bottom: 15px;">完整的系统操作指南，图文并茂，傻瓜式说明，包含所有功能模块的使用方法。</p>
+                            <a href="/docs/user-manual" target="_blank" style="display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 4px; margin-top: 10px;">查看手册 →</a>
+                        </div>
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #27ae60;">
+                            <h3 style="margin-bottom: 10px; color: #2c3e50;">🚀 Cursor配合使用指南</h3>
+                            <p style="color: #666; margin-bottom: 15px;">如何将AI数字人队伍与Cursor配合使用，提高编程效率的详细指南和实战技巧。</p>
+                            <a href="/docs/cursor-guide" target="_blank" style="display: inline-block; padding: 10px 20px; background: #27ae60; color: white; text-decoration: none; border-radius: 4px; margin-top: 10px;">查看指南 →</a>
+                        </div>
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                            <h3 style="margin-bottom: 10px; color: #2c3e50;">🔧 系统技术说明</h3>
+                            <p style="color: #666; margin-bottom: 15px;">数字人代码生成能力、大模型集成、硬件要求等详细技术说明文档。</p>
+                            <a href="/docs/technical-spec" target="_blank" style="display: inline-block; padding: 10px 20px; background: #e74c3c; color: white; text-decoration: none; border-radius: 4px; margin-top: 10px;">查看说明 →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // 先声明 currentTab 变量，避免初始化顺序问题
+        let currentTab = 'overview';
+
+        // 初始化Mermaid（如果可用）
+        if (typeof mermaid !== 'undefined') {
+            try {
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            } catch (e) {
+                console.warn('Mermaid初始化失败:', e);
+            }
+        } else {
+            console.warn('Mermaid未加载，可视化功能将不可用');
+        }
+
+        // WebSocket连接
+        let socket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        function connectWebSocket() {
+            if (typeof io === 'undefined') {
+                console.warn('Socket.IO未加载，实时更新功能将不可用');
+                return;
+            }
+
+            try {
+                socket = io({
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 5000,
+                    reconnectionAttempts: maxReconnectAttempts,
+                    timeout: 20000,
+                    transports: ['websocket', 'polling']
+                });
+
+                socket.on('connect', function() {
+                    console.log('✅ WebSocket已连接');
+                    reconnectAttempts = 0;
+                    socket.emit('subscribe', {type: 'all'});
+                    updateWebSocketStatus(true);
+                });
+
+                socket.on('disconnect', function(reason) {
+                    console.warn('⚠️ WebSocket已断开:', reason);
+                    updateWebSocketStatus(false);
+                });
+
+                socket.on('connect_error', function(error) {
+                    console.error('❌ WebSocket连接错误:', error);
+                    reconnectAttempts++;
+                    if (reconnectAttempts >= maxReconnectAttempts) {
+                        console.error('❌ WebSocket重连失败，已达到最大重试次数');
+                        updateWebSocketStatus(false);
+                    } else {
+                        console.log(`🔄 正在重连... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                    }
+                });
+
+                socket.on('reconnect', function(attemptNumber) {
+                    console.log(`✅ WebSocket重连成功 (尝试 ${attemptNumber})`);
+                    reconnectAttempts = 0;
+                    updateWebSocketStatus(true);
+                });
+
+                socket.on('reconnect_attempt', function(attemptNumber) {
+                    console.log(`🔄 WebSocket重连尝试 ${attemptNumber}/${maxReconnectAttempts}`);
+                });
+
+                socket.on('reconnect_failed', function() {
+                    console.error('❌ WebSocket重连失败');
+                    updateWebSocketStatus(false);
+                });
+
+                socket.on('task_update', function(data) {
+                    console.log('任务更新:', data);
+                    if (currentTab === 'tasks' || currentTab === 'overview') {
+                        loadTasks();
+                    }
+                });
+
+                socket.on('statistics_update', function(data) {
+                    console.log('统计更新:', data);
+                    updateStatistics(data);
+                });
+
+                socket.on('digital_human_update', function(data) {
+                    console.log('数字人更新:', data);
+                    if (currentTab === 'humans' || currentTab === 'overview') {
+                        loadDigitalHumans();
+                    }
+                });
+            } catch (e) {
+                console.error('WebSocket连接失败:', e);
+                updateWebSocketStatus(false);
+            }
+        }
+
+        function updateWebSocketStatus(connected) {
+            // 更新知识库页面的状态显示
+            const knowledgeContent = document.getElementById('knowledge-content');
+            if (knowledgeContent) {
+                const currentHTML = knowledgeContent.innerHTML;
+                const newHTML = currentHTML.replace(
+                    /当前状态:.*?WebSocket.*?/,
+                    `当前状态: ${connected ? '✅ WebSocket已连接' : '⚠️ WebSocket未连接'}`
+                );
+                if (newHTML !== currentHTML) {
+                    knowledgeContent.innerHTML = newHTML;
+                }
+            }
+        }
+
+        // 初始化WebSocket连接
+        connectWebSocket();
+
+        function switchTab(tabName) {
+            // 隐藏所有标签页
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 移除所有活动状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 显示选中的标签页
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            currentTab = tabName;
+
+            // 加载对应标签页的数据
+            switch(tabName) {
+                case 'overview':
+                    loadOverview();
+                    break;
+                case 'humans':
+                    loadDigitalHumans();
+                    break;
+                case 'tasks':
+                    loadTasks();
+                    break;
+                case 'workflows':
+                    loadWorkflows();
+                    break;
+                case 'visualization':
+                    loadVisualization();
+                    break;
+                case 'knowledge':
+                    loadKnowledge();
+                    break;
+                case 'sync':
+                    loadSync();
+                    break;
+                case 'docs':
+                    // 帮助文档页面不需要加载数据
+                    break;
+            }
+        }
+
+        async function loadOverview() {
+            const content = document.getElementById('overview-content');
+            if (!content) {
+                console.error('找不到overview-content元素');
+                return;
+            }
+
+            try {
+                content.innerHTML = '<div class="loading">加载中...</div>';
+
+                // 加载统计信息
+                console.log('开始加载统计信息...');
+                const statsRes = await fetch(`${API_BASE}/api/tasks/statistics`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!statsRes.ok) {
+                    throw new Error(`统计API错误: ${statsRes.status} ${statsRes.statusText}`);
+                }
+
+                const stats = await statsRes.json();
+                console.log('统计信息加载成功:', stats);
+                updateStatistics(stats);
+
+                // 加载数字人状态
+                console.log('开始加载数字人状态...');
+                const humansRes = await fetch(`${API_BASE}/api/digital-humans`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!humansRes.ok) {
+                    throw new Error(`数字人API错误: ${humansRes.status} ${humansRes.statusText}`);
+                }
+
+                const humans = await humansRes.json();
+                console.log('数字人状态加载成功:', humans);
+                const onlineCount = Object.values(humans || {}).filter(h => h && h.status !== 'error').length;
+                const onlineHumansEl = document.getElementById('onlineHumans');
+                if (onlineHumansEl) {
+                    onlineHumansEl.textContent = onlineCount;
+                }
+
+                // 显示概览内容
+                if (content) {
+                    content.innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            <div>
+                                <h3 style="margin-bottom: 10px;">系统状态</h3>
+                                <p>✅ 系统运行正常</p>
+                                <p>✅ ${onlineCount} 个数字人在线</p>
+                                <p>${socket && socket.connected ? '✅ WebSocket连接正常' : '⚠️ WebSocket未连接'}</p>
+                            </div>
+                            <div>
+                                <h3 style="margin-bottom: 10px;">快速操作</h3>
+                                <a href="/smart-planner" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">🌟 与智能产品规划师对话</a>
+                                <div style="margin-top: 10px;">
+                                    <button class="btn btn-primary" onclick="switchTab('tasks')">查看任务</button>
+                                    <button class="btn btn-primary" onclick="switchTab('humans')">查看数字人</button>
+                                    <button class="btn btn-primary" onclick="switchTab('workflows')">查看工作流</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载概览失败:', error);
+                if (content) {
+                    content.innerHTML = `<div class="error">加载失败: ${error.message || '未知错误'}<br><small>请检查浏览器控制台获取详细信息</small><br><button class="btn btn-primary" onclick="loadOverview()" style="margin-top: 10px;">重试</button></div>`;
+                }
+            }
+        }
+
+        async function loadDigitalHumans() {
+            const grid = document.getElementById('humans-grid');
+            if (!grid) {
+                console.error('找不到humans-grid元素');
+                return;
+            }
+
+            try {
+                grid.innerHTML = '<div class="loading">加载中...</div>';
+
+                const response = await fetch(`${API_BASE}/api/digital-humans`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+                }
+
+                const humans = await response.json();
+
+                if (!humans || typeof humans !== 'object') {
+                    throw new Error('API返回数据格式错误');
+                }
+
+                grid.innerHTML = '';
+
+                const entries = Object.entries(humans);
+                if (entries.length === 0) {
+                    grid.innerHTML = '<div class="empty">暂无数字人</div>';
+                    return;
+                }
+
+                for (const [role, data] of entries) {
+                    const card = document.createElement('div');
+                    card.className = 'human-card';
+
+                    // 转义HTML防止XSS
+                    const safeRole = role.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const safeDept = (data.department || '未知').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const safeStatus = (data.status || 'idle').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const workCount = data.work_count || 0;
+
+                    card.innerHTML = `
+                        <div class="human-header">
+                            <div class="human-name">${safeRole}</div>
+                            <div class="human-status status-${safeStatus}">${getStatusText(safeStatus)}</div>
+                        </div>
+                        <div class="human-info">部门: ${safeDept}</div>
+                        <div class="human-info">已完成任务: ${workCount}</div>
+                        ${data.current_task ? `<div class="human-info">当前任务: ${(data.current_task.type || '无').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : ''}
+                        <div class="human-actions">
+                            <button class="btn btn-primary" onclick="viewHumanTasks('${safeRole.replace(/'/g, "\\'")}')">查看任务</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                }
+            } catch (error) {
+                console.error('加载数字人失败:', error);
+                grid.innerHTML = `<div class="error">加载失败: ${error.message || '未知错误'}<br><button class="btn btn-primary" onclick="loadDigitalHumans()" style="margin-top: 10px;">重试</button></div>`;
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/api/tasks/history/recent?hours=24&limit=20`);
+                const data = await response.json();
+
+                const content = document.getElementById('tasks-content');
+
+                let html = '<div style="margin-bottom: 20px;"><button class="btn btn-primary" onclick="showCreateTaskModal()">➕ 创建新任务</button></div>';
+
+                if (data.success && data.tasks.length > 0) {
+                    html += '<table class="task-table"><thead><tr><th>任务ID</th><th>类型</th><th>角色</th><th>状态</th><th>优先级</th><th>创建时间</th></tr></thead><tbody>';
+
+                    data.tasks.forEach(task => {
+                        html += `
+                            <tr>
+                                <td><code>${task.task_id.substring(0, 8)}...</code></td>
+                                <td>${task.task_type}</td>
+                                <td>${task.role_name || '-'}</td>
+                                <td><span class="status-badge status-${task.status}">${getStatusText(task.status)}</span></td>
+                                <td><span class="priority-badge priority-${getPriorityClass(task.priority)}">${getPriorityText(task.priority)}</span></td>
+                                <td>${formatDate(task.created_at)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                } else {
+                    html += '<div class="empty">暂无任务</div>';
+                }
+
+                content.innerHTML = html;
+            } catch (error) {
+                console.error('加载任务失败:', error);
+                document.getElementById('tasks-content').innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        function showCreateTaskModal() {
+            const modal = document.createElement('div');
+            modal.id = 'create-task-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                    <h2 style="margin-bottom: 20px;">创建新任务</h2>
+                    <form id="create-task-form">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">任务类型 *</label>
+                            <select id="task-type" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="">请选择任务类型</option>
+                                <option value="create_plan">创建计划</option>
+                                <option value="design_architecture">设计架构</option>
+                                <option value="develop_frontend">前端开发</option>
+                                <option value="develop_backend">后端开发</option>
+                                <option value="deploy">部署</option>
+                                <option value="test">测试</option>
+                                <option value="code_review">代码审查</option>
+                                <option value="documentation">编写文档</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">优先级 *</label>
+                            <select id="task-priority" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="low">低</option>
+                                <option value="medium" selected>中</option>
+                                <option value="high">高</option>
+                                <option value="urgent">紧急</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">任务描述 *</label>
+                            <textarea id="task-description" required placeholder="请输入任务描述..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 100px; font-family: inherit;"></textarea>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">额外信息（JSON格式，可选）</label>
+                            <textarea id="task-metadata" placeholder='{"key": "value"}' style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 60px; font-family: monospace; font-size: 12px;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                            <button type="button" onclick="closeCreateTaskModal()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer;">取消</button>
+                            <button type="submit" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">创建任务</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById('create-task-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const taskType = document.getElementById('task-type').value;
+                const priority = document.getElementById('task-priority').value;
+                const description = document.getElementById('task-description').value;
+                const metadataText = document.getElementById('task-metadata').value;
+
+                let metadata = {};
+                if (metadataText.trim()) {
+                    try {
+                        metadata = JSON.parse(metadataText);
+                    } catch (e) {
+                        alert('额外信息格式错误，请使用有效的JSON格式');
+                        return;
+                    }
+                }
+
+                const taskData = {
+                    task_type: taskType,
+                    priority: priority,
+                    input_data: {
+                        description: description
+                    },
+                    metadata: metadata
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+
+                    if (response.ok) {
+                        const task = await response.json();
+                        alert(`✅ 任务创建成功！\n任务ID: ${task.id.substring(0, 8)}...\n状态: ${getStatusText(task.status)}\n分配角色: ${task.assigned_to || '待分配'}`);
+                        closeCreateTaskModal();
+                        loadTasks();
+                        if (currentTab === 'overview') {
+                            loadOverview();
+                        }
+                    } else {
+                        const error = await response.json();
+                        alert('❌ 创建失败: ' + (error.error || '未知错误'));
+                    }
+                } catch (error) {
+                    alert('❌ 创建失败: ' + error.message);
+                }
+            });
+        }
+
+        function closeCreateTaskModal() {
+            const modal = document.getElementById('create-task-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function loadWorkflows() {
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows`);
+                const workflows = await response.json();
+
+                const content = document.getElementById('workflows-content');
+
+                if (workflows.length > 0) {
+                    let html = '<table class="task-table"><thead><tr><th>工作流名称</th><th>状态</th><th>步骤数</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+
+                    workflows.forEach(wf => {
+                        html += `
+                            <tr>
+                                <td><strong>${wf.name}</strong></td>
+                                <td><span class="status-badge status-${wf.status}">${wf.status}</span></td>
+                                <td>${wf.steps ? wf.steps.length : 0}</td>
+                                <td>${formatDate(wf.created_at)}</td>
+                                <td>
+                                    <button class="btn btn-primary" onclick="viewWorkflow('${wf.id}')">查看</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<div class="empty">暂无工作流</div>';
+                }
+            } catch (error) {
+                console.error('加载工作流失败:', error);
+                document.getElementById('workflows-content').innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        async function loadVisualization() {
+            try {
+                const response = await fetch(`${API_BASE}/api/visualization/tasks/mermaid`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const container = document.getElementById('mermaid-viz');
+                    if (typeof mermaid !== 'undefined') {
+                        container.innerHTML = '<div class="mermaid">' + data.mermaid + '</div>';
+                        mermaid.run();
+                    } else {
+                        container.innerHTML = '<div class="error">Mermaid未加载，无法显示可视化图表。请检查网络连接或刷新页面。</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('加载可视化失败:', error);
+                const container = document.getElementById('mermaid-viz');
+                if (container) {
+                    container.innerHTML = '<div class="error">加载可视化失败: ' + error.message + '</div>';
+                }
+            }
+        }
+
+        async function loadKnowledge() {
+            const content = document.getElementById('knowledge-content');
+            content.innerHTML = `
+                <div>
+                    <h3>知识库功能</h3>
+                    <p>知识库集成RAGFlow，支持知识检索和自动沉淀。</p>
+                    <p>当前状态: ${socket && socket.connected ? '✅ WebSocket已连接' : '⚠️ WebSocket未连接'}</p>
+                    <button class="btn btn-primary" onclick="searchKnowledge()">搜索知识</button>
+                </div>
+            `;
+        }
+
+        async function loadSync() {
+            const content = document.getElementById('sync-content');
+            try {
+                content.innerHTML = '<div class="loading">加载同步状态...</div>';
+
+                const response = await fetch(`${API_BASE}/api/sync/status`);
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                const status = await response.json();
+
+                let html = '<div style="display: grid; gap: 20px;">';
+
+                // Git状态
+                html += `
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
+                        <h3 style="margin-bottom: 15px;">📦 Git代码同步</h3>
+                        <p><strong>状态:</strong> ${status.git.available ? '✅ ' + status.git.message : '❌ ' + status.git.message}</p>
+                        ${status.git.has_changes ? '<p style="color: #e74c3c;">⚠️ 有未提交的更改</p>' : ''}
+                        ${!status.git.has_remote ? '<p style="color: #f39c12;">⚠️ 未配置远程仓库</p>' : ''}
+                        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="syncGitPush()">📤 推送到GitHub</button>
+                            <button class="btn btn-primary" onclick="syncGitPull()">📥 从GitHub拉取</button>
+                            ${!status.git.has_remote ? '<button class="btn btn-secondary" onclick="showGitSetup()">⚙️ 配置远程仓库</button>' : ''}
+                        </div>
+                    </div>
+                `;
+
+                // 数据库状态
+                html += `
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #27ae60;">
+                        <h3 style="margin-bottom: 15px;">💾 数据库同步</h3>
+                        <p><strong>数据库大小:</strong> ${status.database.size_mb} MB</p>
+                        <p><strong>状态:</strong> ${status.database.exists ? '✅ 数据库存在' : '❌ 数据库不存在'}</p>
+                        <div style="margin-top: 15px;">
+                            <h4>可用存储选项:</h4>
+                            <div style="display: grid; gap: 10px; margin-top: 10px;">
+                `;
+
+                if (status.storage_options && status.storage_options.length > 0) {
+                    status.storage_options.forEach(option => {
+                        const safePath = option.path.replace(/'/g, "\\'");
+                        html += `
+                            <div style="padding: 15px; background: white; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <strong>${option.type}</strong>
+                                    <p style="margin: 5px 0; color: #666; font-size: 14px;">${option.description}</p>
+                                    <p style="margin: 0; color: #999; font-size: 12px; word-break: break-all;">${option.path}</p>
+                                </div>
+                                <button class="btn btn-primary" onclick="syncDatabase('${option.type}', '${safePath}')" style="margin-left: 10px;">同步</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p style="color: #999;">未检测到可用的存储选项</p>';
+                }
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                html += '</div>';
+                content.innerHTML = html;
+            } catch (error) {
+                console.error('加载同步状态失败:', error);
+                content.innerHTML = `<div class="error">加载失败: ${error.message}<br><small>请确保同步管理模块已正确安装</small></div>`;
+            }
+        }
+
+        async function syncGitPush() {
+            const message = prompt('请输入提交信息（可选）:', `Auto sync: ${new Date().toLocaleString('zh-CN')}`);
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/git/push`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: message || undefined})
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    loadSync();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ 同步失败: ' + error.message);
+            }
+        }
+
+        async function syncGitPull() {
+            if (!confirm('确定要从GitHub拉取最新代码吗？这可能会覆盖本地更改。')) return;
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/git/pull`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    loadSync();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ 拉取失败: ' + error.message);
+            }
+        }
+
+        function showGitSetup() {
+            const url = prompt('请输入GitHub仓库URL:', 'https://github.com/your-username/repo-name.git');
+            if (!url) return;
+
+            fetch(`${API_BASE}/api/sync/git/setup`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({remote_url: url})
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    loadSync();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            })
+            .catch(error => alert('❌ 设置失败: ' + error.message));
+        }
+
+        async function syncDatabase(storageType, storagePath) {
+            if (!confirm(`确定要同步数据库到 ${storageType} 吗？`)) return;
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/database`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        storage_type: storageType,
+                        storage_path: storagePath
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✅ ${result.message}\n操作: ${result.action}`);
+                    loadSync();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ 同步失败: ' + error.message);
+            }
+        }
+
+        function updateStatistics(stats) {
+            if (stats) {
+                document.getElementById('totalTasks').textContent = stats.total || 0;
+                document.getElementById('completedTasks').textContent = stats.by_status?.completed || 0;
+                document.getElementById('inProgressTasks').textContent = stats.by_status?.in_progress || 0;
+            }
+        }
+
+        function getStatusText(status) {
+            const map = {
+                'pending': '待分配',
+                'assigned': '已分配',
+                'in_progress': '进行中',
+                'completed': '已完成',
+                'failed': '失败',
+                'idle': '空闲',
+                'working': '工作中',
+                'error': '错误'
+            };
+            return map[status] || status;
+        }
+
+        function getPriorityClass(priority) {
+            if (priority <= 1) return 'low';
+            if (priority <= 2) return 'medium';
+            if (priority <= 3) return 'high';
+            return 'urgent';
+        }
+
+        function getPriorityText(priority) {
+            const map = {1: '低', 2: '中', 3: '高', 4: '紧急'};
+            return map[priority] || priority;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+
+        function viewHumanTasks(role) {
+            switchTab('tasks');
+            // 可以添加过滤逻辑
+        }
+
+        function viewWorkflow(id) {
+            window.location.href = `/workflows/${id}`;
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            loadOverview();
+
+            // 每30秒自动刷新当前标签页
+            setInterval(() => {
+                switch(currentTab) {
+                    case 'overview':
+                        loadOverview();
+                        break;
+                    case 'humans':
+                        loadDigitalHumans();
+                        break;
+                    case 'tasks':
+                        loadTasks();
+                        break;
+                    case 'workflows':
+                        loadWorkflows();
+                        break;
+                case 'visualization':
+                    loadVisualization();
+                    break;
+                case 'sync':
+                    loadSync();
+                    break;
+                case 'docs':
+                    // 帮助文档页面不需要加载数据
+                    break;
+            }
+        }, 30000);
+        };
+    </script>
+</body>
+</html>

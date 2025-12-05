@@ -1,0 +1,2 @@
+# 此目录用于存储密码数据库文件
+# credentials.db 文件会被 .gitignore 忽略，不会提交到Git
